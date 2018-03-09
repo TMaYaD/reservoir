@@ -1,0 +1,248 @@
+swagger: "2.0"
+info:
+  description: "Reservoir is a resource manager with support for wildcards"
+  version: "1.0.0"
+  title: "Reservoir"
+  termsOfService: "http://lexent.bio/terms/"
+  contact:
+    email: "schandra@lexenbio.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "reservoir.lexent.bio"
+basePath: "/api/v1"
+tags:
+- name: "resource"
+  description: "Define resources"
+- name: "claim"
+  description: "Claim a predefined resource"
+schemes:
+- "https"
+definitions:
+  Resource:
+    type: "object"
+    properties:
+      template:
+        type: "string"
+        description: "Resource name"
+      total:
+        type: "integer"
+        format: "int32"
+      claims:
+        type: "array"
+        items:
+          $ref: "#/definitions/Claim"
+    required:
+    - "name"
+    - "total"
+    xml:
+      name: "Resource"
+  Claim:
+    type: "object"
+    properties:
+      name:
+        type: "string"
+      resource:
+        type: "object"
+      claimed:
+        type: "integer"
+        format: "int64"
+        default: 1
+
+    required:
+    - "name"
+    xml:
+      name: "Claim"
+paths:
+  /resource:
+    get:
+      tags:
+      - "resource"
+      summary: "List all defined resources and their claims"
+      operationId: "listResources"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: "array"
+            items:
+              $ref: "#/definitions/Resource"
+    post:
+      tags:
+      - "resource"
+      summary: "Add a new resource"
+      description: "This increments the total count if the resource with the given name already exists."
+      operationId: "addResource"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Resource object that needs to be added"
+        required: true
+        schema:
+          $ref: "#/definitions/Resource"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Pet"
+        405:
+          description: "Invalid input"
+    put:
+      tags:
+      - "resource"
+      summary: "Set value for a resource"
+      description: "This will create the resource if it doesn't exist."
+      operationId: "setResource"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Resource object that needs to be set."
+        required: true
+        schema:
+          $ref: "#/definitions/Resource"
+      responses:
+        201:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Pet"
+        405:
+          description: "Validation exception"
+  /resource/{template}:
+    get:
+      tags:
+      - "resource"
+      summary: "Find resource by template"
+      description: "Returns a single resource"
+      operationId: "getResource"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "template"
+        in: "path"
+        description: "template of resource to return"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Resource"
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Resource not found"
+    post:
+      tags:
+      - "resource"
+      summary: "Updates a resource with form data"
+      description: ""
+      operationId: "updateResourceWithForm"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "template"
+        in: "path"
+        description: "template of resource that needs to be updated"
+        required: true
+        type: "string"
+      - name: "total"
+        in: "formData"
+        description: "Updated total of the resource"
+        required: true
+        type: "integer"
+        format: "int64"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Resource"
+        404:
+          description: "Resource not found"
+        405:
+          description: "Invalid input"
+    delete:
+      tags:
+      - "resource"
+      summary: "Deletes a resource"
+      description: ""
+      operationId: "deleteResource"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "template"
+        in: "path"
+        description: "template for resource to delete"
+        required: true
+        type: "string"
+      responses:
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "resource not found"
+  /claim:
+    post:
+      tags:
+      - "claim"
+      summary: "Place a claim for a given name"
+      description: ""
+      operationId: "claimResource"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "make claim with a given name"
+        required: true
+        schema:
+          $ref: "#/definitions/Claim"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Claim"
+        400:
+          description: "Invalid Claim"
+    delete:
+      tags:
+      - "claim"
+      summary: "Release claimed resources"
+      description: "name should match previously claimed resource"
+      operationId: "releaseClaim"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "make claim with a given name"
+        required: true
+        schema:
+          $ref: "#/definitions/Claim"
+      responses:
+        400:
+          description: "Invalid count supplied"
+        404:
+          description: "resource not found"
+  /claim/{name}:
+    get:
+      tags:
+      - "claim"
+      summary: "Find claim by name"
+      description: "name should be an fqdn and match one of the predefined resource templates."
+      operationId: "getClaim"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "name"
+        in: "path"
+        description: "name of the claimed resource"
+        required: true
+        type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            $ref: "#/definitions/Claim"
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Order not found"
